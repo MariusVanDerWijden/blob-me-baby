@@ -6,6 +6,7 @@ https://medium.com/@zeusfyi/zeus-ui-no-code-kubernetes-authenticated-api-tutoria
 
 You can create your own API following this tutorial, replace the docker image to this or your own
 
-DockerImage: zeusfyi/blobme:latest
-Args: -c, main
+#### DockerImage: zeusfyi/blobme:latest
+#### Args: -c, main
+
 I also removed the auth url, so the API is public, you can add it back if you want to make it authenticated.
