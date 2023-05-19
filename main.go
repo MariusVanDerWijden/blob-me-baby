@@ -13,13 +13,14 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting server at port 80")
+	fmt.Println("Starting server at port 8080")
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/random", handleRandom).
 		Methods("GET")
 	router.HandleFunc("/encode/{data}", handleEncode).
 		Methods("GET")
-	if err := http.ListenAndServe(":80", router); err != nil {
+	router.HandleFunc("/health", Healthy).Methods("GET") // Add the health endpoint
+	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -77,4 +78,9 @@ func encodeBlobs(data []byte) types.Blobs {
 		copy(blobs[blobIndex][fieldIndex*32:], data[i:max])
 	}
 	return blobs
+}
+
+func Healthy(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Healthy")
 }
