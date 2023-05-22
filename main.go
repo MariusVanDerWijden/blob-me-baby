@@ -57,7 +57,10 @@ func handleEncode(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(500)
 		return
 	}
-	rw.Write(resp)
+	_, err = rw.Write(resp)
+	if err != nil {
+		log.Fatalf("Error writing response: %v\n", err)
+	}
 }
 
 func encodeBlobs(data []byte) types.Blobs {
