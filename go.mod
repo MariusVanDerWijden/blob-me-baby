@@ -2,7 +2,10 @@ module github.com/MariusVanDerWijden/blob-me-baby
 
 go 1.20
 
-require github.com/ethereum/go-ethereum v1.11.6
+require (
+	github.com/ethereum/go-ethereum v1.11.6
+	github.com/gorilla/mux v1.8.0
+)
 
 require (
 	github.com/bits-and-blooms/bitset v1.7.0 // indirect
@@ -11,7 +14,6 @@ require (
 	github.com/consensys/gnark-crypto v0.11.0 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.2.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
-	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/protolambda/ztyp v0.2.1 // indirect

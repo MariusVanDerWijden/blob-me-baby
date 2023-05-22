@@ -28,6 +28,7 @@ func handleRandom(rw http.ResponseWriter, req *http.Request) {
 	// TODO impl
 }
 
+// CommitmentAndProof is the response to the encode endpoint
 type CommitmentAndProof struct {
 	Commitments     []types.KZGCommitment
 	VersionedHashes []common.Hash
