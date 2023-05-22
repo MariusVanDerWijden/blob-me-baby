@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,14 +13,21 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var listeningPort = flag.String("port", "8080", "Port to listen on")
+
 func main() {
-	fmt.Println("Starting server at port 80")
+	flag.Parse()
+	fmt.Printf("Starting server at port %s\n", *listeningPort)
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/random", handleRandom).
 		Methods("GET")
 	router.HandleFunc("/encode/{data}", handleEncode).
 		Methods("GET")
-	if err := http.ListenAndServe(":80", router); err != nil {
+
+	// Format the string with the port number
+	portStr := fmt.Sprintf(":%v", *listeningPort)
+
+	if err := http.ListenAndServe(portStr, router); err != nil {
 		log.Fatal(err)
 	}
 }
