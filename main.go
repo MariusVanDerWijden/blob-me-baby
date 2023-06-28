@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -8,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/gorilla/mux"
 )
@@ -38,25 +39,38 @@ func handleRandom(rw http.ResponseWriter, req *http.Request) {
 
 // CommitmentAndProof is the response to the encode endpoint
 type CommitmentAndProof struct {
-	Commitments     []types.KZGCommitment
 	VersionedHashes []common.Hash
-	AggregatedProof []types.KZGProof
+	Commitments     []kzg4844.Commitment
+	Blobs           []kzg4844.Blob
+	AggregatedProof []kzg4844.Proof
 }
 
 func handleEncode(rw http.ResponseWriter, req *http.Request) {
 	data := common.FromHex(mux.Vars(req)["data"])
 	blobs := encodeBlobs(data)
-	commits, versionedHashes, aggProof, err := blobs.ComputeCommitmentsAndProofs()
-	if err != nil {
-		fmt.Printf("Error computing commitment: %v\n", err)
-		rw.WriteHeader(500)
-		return
-	}
 
-	result := CommitmentAndProof{
-		Commitments:     commits,
-		VersionedHashes: versionedHashes,
-		AggregatedProof: aggProof,
+	var result CommitmentAndProof
+
+	for _, blob := range blobs {
+		result.Blobs = append(result.Blobs, blob)
+
+		commit, err := kzg4844.BlobToCommitment(blob)
+		if err != nil {
+			fmt.Printf("Error computing commitment: %v\n", err)
+			rw.WriteHeader(500)
+			return
+		}
+		result.Commitments = append(result.Commitments, commit)
+
+		proof, err := kzg4844.ComputeBlobProof(blob, commit)
+		if err != nil {
+			fmt.Printf("Error computing commitment: %v\n", err)
+			rw.WriteHeader(500)
+			return
+		}
+		result.AggregatedProof = append(result.AggregatedProof, proof)
+
+		result.VersionedHashes = append(result.VersionedHashes, kZGToVersionedHash(commit))
 	}
 
 	resp, err := json.Marshal(result)
@@ -71,14 +85,14 @@ func handleEncode(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func encodeBlobs(data []byte) types.Blobs {
-	blobs := []types.Blob{{}}
+func encodeBlobs(data []byte) []kzg4844.Blob {
+	blobs := []kzg4844.Blob{{}}
 	blobIndex := 0
 	fieldIndex := -1
 	for i := 0; i < len(data); i += 31 {
 		fieldIndex++
-		if fieldIndex == params.FieldElementsPerBlob {
-			blobs = append(blobs, types.Blob{})
+		if fieldIndex == params.BlobTxFieldElementsPerBlob {
+			blobs = append(blobs, kzg4844.Blob{})
 			blobIndex++
 			fieldIndex = 0
 		}
@@ -89,4 +103,14 @@ func encodeBlobs(data []byte) types.Blobs {
 		copy(blobs[blobIndex][fieldIndex*32:], data[i:max])
 	}
 	return blobs
+}
+
+var blobCommitmentVersionKZG uint8 = 0x01
+
+// kZGToVersionedHash implements kzg_to_versioned_hash from EIP-4844
+func kZGToVersionedHash(kzg kzg4844.Commitment) common.Hash {
+	h := sha256.Sum256(kzg[:])
+	h[0] = blobCommitmentVersionKZG
+
+	return h
 }
