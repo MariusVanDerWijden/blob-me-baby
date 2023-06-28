@@ -47,30 +47,12 @@ type CommitmentAndProof struct {
 
 func handleEncode(rw http.ResponseWriter, req *http.Request) {
 	data := common.FromHex(mux.Vars(req)["data"])
-	blobs := encodeBlobs(data)
 
-	var result CommitmentAndProof
-
-	for _, blob := range blobs {
-		result.Blobs = append(result.Blobs, blob)
-
-		commit, err := kzg4844.BlobToCommitment(blob)
-		if err != nil {
-			fmt.Printf("Error computing commitment: %v\n", err)
-			rw.WriteHeader(500)
-			return
-		}
-		result.Commitments = append(result.Commitments, commit)
-
-		proof, err := kzg4844.ComputeBlobProof(blob, commit)
-		if err != nil {
-			fmt.Printf("Error computing commitment: %v\n", err)
-			rw.WriteHeader(500)
-			return
-		}
-		result.AggregatedProof = append(result.AggregatedProof, proof)
-
-		result.VersionedHashes = append(result.VersionedHashes, kZGToVersionedHash(commit))
+	result, err := EncodeBlobs(data)
+	if err != nil {
+		fmt.Printf("Error encoding blobs: %v\n", err)
+		rw.WriteHeader(500)
+		return
 	}
 
 	resp, err := json.Marshal(result)
@@ -83,6 +65,30 @@ func handleEncode(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatalf("Error writing response: %v\n", err)
 	}
+}
+
+func EncodeBlobs(data []byte) (*CommitmentAndProof, error) {
+	blobs := encodeBlobs(data)
+
+	var result CommitmentAndProof
+	for _, blob := range blobs {
+		result.Blobs = append(result.Blobs, blob)
+
+		commit, err := kzg4844.BlobToCommitment(blob)
+		if err != nil {
+			return nil, err
+		}
+		result.Commitments = append(result.Commitments, commit)
+
+		proof, err := kzg4844.ComputeBlobProof(blob, commit)
+		if err != nil {
+			return nil, err
+		}
+		result.AggregatedProof = append(result.AggregatedProof, proof)
+
+		result.VersionedHashes = append(result.VersionedHashes, kZGToVersionedHash(commit))
+	}
+	return &result, nil
 }
 
 func encodeBlobs(data []byte) []kzg4844.Blob {
