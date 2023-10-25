@@ -47,7 +47,6 @@ type CommitmentAndProof struct {
 
 func handleEncode(rw http.ResponseWriter, req *http.Request) {
 	data := common.FromHex(mux.Vars(req)["data"])
-
 	result, err := EncodeBlobs(data)
 	if err != nil {
 		fmt.Printf("Error encoding blobs: %v\n", err)
