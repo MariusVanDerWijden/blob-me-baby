@@ -65,3 +65,12 @@ func TestEncode(t *testing.T) {
 	rand.Read(rng)
 	testEncode(rng)
 }
+
+func BenchmarkPack(b *testing.B) {
+	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
+	rand.Read(rng)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		packTightly(rng, 32)
+	}
+}
