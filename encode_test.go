@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"math/bits"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/params"
@@ -49,6 +50,21 @@ func TestPackTightlyString(t *testing.T) {
 	}
 }
 
+/*
+func TestPackTightlyFast(t *testing.T) {
+	for i, test := range tests {
+		got := packTightlyFast(test.input, test.wordsize)
+		if countOnes(test.want) != countOnes(test.input) {
+			panic("invalid test")
+		}
+		if !bytes.Equal(got, test.want) {
+			t.Fatalf("test %v failed, want %b got %b", i, test.want, got)
+		}
+
+	}
+}
+*/
+
 func TestEncode(t *testing.T) {
 	testEncode := func(data []byte) {
 		if _, err := EncodeBlobs(data, false); err != nil {
@@ -64,4 +80,21 @@ func TestEncode(t *testing.T) {
 	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
 	rand.Read(rng)
 	testEncode(rng)
+}
+
+func BenchmarkPack(b *testing.B) {
+	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
+	rand.Read(rng)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		packTightly(rng, 32)
+	}
+}
+
+func countOnes(data []byte) int {
+	var res int
+	for i := 0; i < len(data); i++ {
+		res += bits.OnesCount(uint(data[i]))
+	}
+	return res
 }
