@@ -79,25 +79,52 @@ func pack(data []byte) []byte {
 func packTightly(data []byte, wordsize int) []byte {
 	s := make([]byte, 0, len(data)+len(data)/wordsize)
 	for i := 0; i < len(data); i++ {
-		if i%wordsize == 0 {
-			s = append(s, 0x30)
-			s = append(s, 0x30)
-		}
 		s = append(s, fmt.Sprintf("%08b", data[i])...)
 	}
-	fmt.Println(s)
-	/*
-		for i := 0; i < len(s); i += 8 * wordsize {
-			s = append(s[:i], append([]byte{0x30, 0x30}, s[i:]...)...)
-		}
-	*/
+	for i := 0; i < len(s); i += 8 * wordsize {
+		s = append(s[:i], append([]byte{0x30, 0x30}, s[i:]...)...)
+	}
 	if missing := len(s) % (8 * wordsize); missing != 0 {
 		s = append(s, strings.Repeat("0", (8*wordsize)-missing)...)
 	}
 	res := make([]byte, 0, len(s)/8)
 	for i := 0; i < len(s); i += 8 {
-		substring := string(s[i : i+8])
-		b, err := strconv.ParseUint(substring, 2, 8)
+		b, err := strconv.ParseUint(string(s[i:i+8]), 2, 8)
+		if err != nil {
+			panic("conversion failed")
+		}
+		res = append(res, byte(b))
+	}
+	return res
+}
+
+func packTightlyFast(data []byte, wordsize int) []byte {
+	s := make([]byte, 0, len(data)+len(data)/wordsize)
+	packed := 0
+	for i := 0; i < len(data); i++ {
+		next := []byte(fmt.Sprintf("%08b", data[i]))
+		if (len(s)+len(next))/(wordsize*8) >= packed {
+			diff := (len(s) + len(next)) % (wordsize * 8)
+			if i != 0 && diff != 0 {
+				s = append(s, next[:8-diff]...)
+				diff = 8
+			}
+			s = append(s, 0x30)
+			s = append(s, 0x30)
+			s = append(s, next[8-diff:]...)
+			packed++
+		} else {
+			s = append(s, next...)
+		}
+	}
+	fmt.Println(string(s))
+	if missing := len(s) % (8 * wordsize); missing != 0 {
+		s = append(s, strings.Repeat("0", (8*wordsize)-missing)...)
+	}
+	fmt.Println(string(s))
+	res := make([]byte, 0, len(s)/8)
+	for i := 0; i < len(s); i += 8 {
+		b, err := strconv.ParseUint(string(s[i:i+8]), 2, 8)
 		if err != nil {
 			panic("conversion failed")
 		}
