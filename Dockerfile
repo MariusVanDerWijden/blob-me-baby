@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o blob-me-baby main.go
+RUN CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o blob-me-baby .
 
 FROM alpine:latest
 
