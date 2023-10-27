@@ -14,7 +14,7 @@ import (
 func EncodeBlobs(data []byte, compressed bool) (*CommitmentAndProof, error) {
 	var packed []byte
 	if compressed {
-		packed = packTightly(data, 32)
+		packed = packTightlyFast(data, 32)
 	} else {
 		packed = pack(data)
 	}
