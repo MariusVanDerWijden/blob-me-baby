@@ -101,27 +101,35 @@ func packTightly(data []byte, wordsize int) []byte {
 func packTightlyFast(data []byte, wordsize int) []byte {
 	s := make([]byte, 0, len(data)+len(data)/wordsize)
 	packed := 0
+	s = append(s, 0x30)
+	s = append(s, 0x30)
 	for i := 0; i < len(data); i++ {
 		next := []byte(fmt.Sprintf("%08b", data[i]))
-		if (len(s)+len(next))/(wordsize*8) >= packed {
-			diff := (len(s) + len(next)) % (wordsize * 8)
-			if i != 0 && diff != 0 {
-				s = append(s, next[:8-diff]...)
-				diff = 8
+		// How many bits do we need to fill up to the next word
+		diff := (wordsize * 8) - (len(s) % (wordsize * 8))
+		if diff <= 8 {
+			if diff != 8 {
+				s = append(s, next[:diff]...)
 			}
 			s = append(s, 0x30)
 			s = append(s, 0x30)
-			s = append(s, next[8-diff:]...)
+			if wordsize == 1 && diff == 8 {
+				// Special case if the wordsize is 1 (only in tests)
+				s = append(s, next[0:6]...)
+				s = append(s, 0x30)
+				s = append(s, 0x30)
+				s = append(s, next[6:]...)
+			} else {
+				s = append(s, next[diff:]...)
+			}
 			packed++
 		} else {
 			s = append(s, next...)
 		}
 	}
-	fmt.Println(string(s))
 	if missing := len(s) % (8 * wordsize); missing != 0 {
 		s = append(s, strings.Repeat("0", (8*wordsize)-missing)...)
 	}
-	fmt.Println(string(s))
 	res := make([]byte, 0, len(s)/8)
 	for i := 0; i < len(s); i += 8 {
 		b, err := strconv.ParseUint(string(s[i:i+8]), 2, 8)

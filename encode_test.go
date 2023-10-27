@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"math/bits"
 	"testing"
 
@@ -50,9 +51,9 @@ func TestPackTightlyString(t *testing.T) {
 	}
 }
 
-/*
 func TestPackTightlyFast(t *testing.T) {
 	for i, test := range tests {
+		fmt.Printf("TEST: %v\n", i)
 		got := packTightlyFast(test.input, test.wordsize)
 		if countOnes(test.want) != countOnes(test.input) {
 			panic("invalid test")
@@ -60,10 +61,8 @@ func TestPackTightlyFast(t *testing.T) {
 		if !bytes.Equal(got, test.want) {
 			t.Fatalf("test %v failed, want %b got %b", i, test.want, got)
 		}
-
 	}
 }
-*/
 
 func TestEncode(t *testing.T) {
 	testEncode := func(data []byte) {
@@ -82,12 +81,33 @@ func TestEncode(t *testing.T) {
 	testEncode(rng)
 }
 
-func BenchmarkPack(b *testing.B) {
+// BenchmarkPackTight-8   	       3	 375693616 ns/op	2187486914 B/op	  135308 allocs/op
+func BenchmarkPackTight(b *testing.B) {
 	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
 	rand.Read(rng)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		packTightly(rng, 32)
+	}
+}
+
+// BenchmarkPackTightFast-8   	      48	  23178028 ns/op	 6056594 B/op	  131090 allocs/op
+func BenchmarkPackTightFast(b *testing.B) {
+	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
+	rand.Read(rng)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		packTightlyFast(rng, 32)
+	}
+}
+
+// BenchmarkPack-8   	   18536	     65399 ns/op	  303104 B/op	       2 allocs/op
+func BenchmarkPack(b *testing.B) {
+	rng := make([]byte, params.BlobTxBytesPerFieldElement*params.BlobTxFieldElementsPerBlob)
+	rand.Read(rng)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pack(rng)
 	}
 }
 
